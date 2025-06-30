@@ -1,70 +1,51 @@
 const axios = require("axios");
 const { malvin } = require("../malvin");
 
-const GEMINI_API_KEY = "AIzaSyDVdti41rOyMb_27uvJe-4KpLCxUiBkJWc"; // তোমার Gemini API key
+const GEMINI_API_KEY = "AIzaSyDVdti41rOyMb_27uvJe-4KpLCxUiBkJWc";
 
-// auto reply without prefix, reply like polite human with emojis & multi-bubble
 malvin({
-  on: "body",       // কোন prefix ছাড়াই সব মেসেজে রেসপন্স দিবে
+  on: "body",  // কোনো prefix ছাড়া মেসেজ পেতেই ট্রিগার হবে
+  filename: __filename,
   category: "ai",
-  desc: "Auto reply like a polite human with emojis",
-}, async (conn, mek, m, { from, body, reply }) => {
+}, async (conn, mek, m, { from, body, reply, react }) => {
   try {
-    if (!body || body.trim().length === 0) return; // empty message ignore করো
+    const q = body?.trim();
+    if (!q || q.length < 3) return; // খুব ছোট মেসেজ এড়িয়ে যাওয়া ভালো
 
-    // AI কে prompt - politely, emoji সহ বাংলা, multi-message format
+    await react("⌛");
+
     const prompt = `
-You are a polite and friendly Bengali speaker who replies like a real person. Use simple, respectful language with natural emojis to express feelings. Your replies may come as one or more short messages (like separate chat bubbles). Avoid very casual slang but keep it warm and human. Always answer in Bengali.
+তুমি একজন ভদ্র, বন্ধুত্বপূর্ণ এবং আবেগঘন বাংলা ভাষাভাষী মানুষ। ব্যবহারকারীর বার্তার উত্তরে তুমি সুন্দর, মার্জিত এবং আবেগঘন ভাষায় প্রতিক্রিয়া জানাও। প্রতিটি উত্তরে প্রাসঙ্গিক ইমোজি ব্যবহার করো এবং একাধিক ছোট মেসেজে (chat bubble style) ভাগ করে পাঠাও যেন বাস্তব মানুষের মতো লাগে।
 
-User message: "${body}"
-
-Split your response naturally into short parts if needed. Use emojis appropriately to show emotions.
+মেসেজঃ "${q}"
     `;
 
-    // Gemini API URL
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=${GEMINI_API_KEY}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
 
-    // Gemini API request body
-    const requestBody = {
-      prompt: {
-        messages: [
-          {
-            author: "user",
-            content: {
-              text: prompt
-            }
-          }
-        ]
-      },
-      temperature: 0.7,
-      candidateCount: 1,
-      maxOutputTokens: 300,
-    };
+    const response = await axios.post(apiUrl, {
+      contents: [{ role: "user", parts: [{ text: prompt }] }]
+    });
 
-    // Call Gemini API
-    const response = await axios.post(apiUrl, requestBody);
+    const aiText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || null;
 
-    // Extract AI reply text
-    let aiText = "";
-    if (response.data && response.data.candidates && response.data.candidates.length > 0) {
-      aiText = response.data.candidates[0].content.text;
-    } else {
-      await reply("দুঃখিত, আমি এখনো সঠিক উত্তর দিতে পারছি না। আবার চেষ্টা করুন।");
-      return;
+    if (!aiText) {
+      await react("❌");
+      return reply("দুঃখিত, AI থেকে কোনো উত্তর পাওয়া যায়নি। পরে আবার চেষ্টা করুন।");
     }
 
-    // Split reply into parts by double newline for multi-bubble effect
     const replyParts = aiText.split(/\n{2,}/);
 
-    // Send each part as separate message (bubble)
+    await react("✅");
+
     for (const part of replyParts) {
-      if (part.trim().length > 0) {
+      if (part.trim()) {
         await conn.sendMessage(from, { text: part.trim() }, { quoted: mek });
       }
     }
 
   } catch (error) {
-    console.error("Error in auto-reply Gemini AI:", error);
-    await reply("⚠️ সমস্যার জন্য দুঃখিত, AI থেকে সঠিক উত্তর পাওয়া যায়নি।");
+    console.error("Gemini AutoReply Error:", error?.response?.data || error.message);
+    await react("❌");
+    reply("সিস্টেমে কিছু সমস্যা হয়েছে। দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।");
   }
 });
