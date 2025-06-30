@@ -1,33 +1,28 @@
 const axios = require("axios");
 const { malvin } = require("../malvin");
-require("dotenv").config(); // .env ফাইল থেকে এনভায়রনমেন্ট ভেরিয়েবল লোড করবে
+// require("dotenv").config(); // এই লাইনটি এখন প্রয়োজন নেই কারণ আপনি dotenv ব্যবহার করছেন না
 
 malvin({
-    pattern: "(.*)", // <<-- এই লাইনটি পরিবর্তন করুন! এটি এখন যেকোনো মেসেজ ম্যাচ করবে।
+    pattern: "(.*)", // এটি যেকোনো মেসেজ ম্যাচ করবে, অটো-রিপ্লাইয়ের জন্য
     desc: "Gemini API ব্যবহার করে প্রিফিক্স ছাড়াই মানুষের টাইপিং ভুলের মতো অটো-রিপ্লাই।",
     category: "ai",
     react: "🤖",
     filename: __filename,
     use: "চ্যাটে প্রিফিক্স ছাড়াই অটো-রিপ্লাই",
-    fromMe: false,
+    fromMe: false, // নিজের মেসেজে রেসপন্স দিবে না
 }, async (conn, mek, m, { from, q, reply }) => {
     try {
         const userText = (m.text || q || "").trim();
 
         // খালি বা খুব ছোট মেসেজ এড়িয়ে চলুন API কল সংরক্ষণ করতে এবং এটিকে আরও স্বাভাবিক দেখাতে।
-        // রিপ্লাইয়ের জন্য সর্বনিম্ন মেসেজ দৈর্ঘ্যের জন্য '3' পরিবর্তন করতে পারেন।
         if (!userText || userText.length < 3) {
-            return; // যদি বৈধ ইউজার টেক্সট না থাকে তাহলে বেরিয়ে যান
+            return;
         }
 
-        // --- গুরুত্বপূর্ণ: API কী সুরক্ষিতভাবে এনভায়রনমেন্ট ভেরিয়েবল থেকে লোড করুন ---
-        // যদি আপনি .env ফাইল ব্যবহার না করেন এবং সরাসরি কী ব্যবহার করতে চান
-        // তবে মনে রাখবেন এটি একটি নিরাপত্তা ঝুঁকি।
-        const apiKey = process.env.GEMINI_API_KEY || "AIzaSyDVdti41rOyMb_27uvJe-4KpLCxUiBkJWc"; 
-        // আপনি যদি dotenv ব্যবহার করেন, তাহলে শুধু process.env.GEMINI_API_KEY ব্যবহার করুন।
-        // আমি এখানে একটি ফলব্যাক কী যোগ করেছি যাতে কোডটি চলতে পারে যদি .env সেটআপ না থাকে, 
-        // কিন্তু এটি শুধুমাত্র টেস্টিং এর জন্য, প্রোডাকশনে নিরাপদ নয়।
+        // --- আপনার API Key এখানে সরাসরি লেখা হয়েছে ---
+        const apiKey = "AIzaSyDVdti41rOyMb_27uvJe-4KpLCxUiBkJWc"; // <<-- আপনার আসল Gemini API Key এখানে দিন!
 
+        // এই চেকটি এখন অকেজো, কারণ আপনি apiKey সরাসরি দিয়েছেন।
         if (!apiKey) {
             console.error("❌ Gemini API কী সেট করা নেই। বট মালিককে জানান।");
             return reply("দুঃখিত, Gemini API কী সেট করা নেই। বট মালিককে জানান।");
@@ -100,7 +95,7 @@ malvin({
         await reply(typoText);
 
         setTimeout(async () => {
-            const AI_IMG = 'https://files.catbox.moe/79tf9z.jpg'; 
+            const AI_IMG = 'https://files.catbox.moe/79tf9z.jpg'; // আপনার পছন্দের ছবি URL
 
             const formattedInfo = `🤖 *জেমিনি এআই বলছে:*\n\n${apiReply}`;
 
