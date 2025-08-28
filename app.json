@@ -8,7 +8,7 @@
     "stack": "container",
   "env": {
       "SESSION_ID": {
-        "description": "Put your SESSION_ID here. Make sure it starts with malvin~",
+        "description": "malvin~djkWgCDA#skDHe6nbF5zRC4Pwz3gXmzSfFfQdZl-_sA2V9B5XY-g",
         "value":"",
         "required": true
         
@@ -40,7 +40,7 @@
 
     "OWNER_NUMBER": {
       "description": "put the owner number for bot.",
-      "value": "263714757857"
+      "value": "8801749410539"
       "required": true
       
    },
